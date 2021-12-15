@@ -3,63 +3,65 @@ package controller
 import (
 	"app/api/config"
 	"app/api/modal"
+	"app/request"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
 func LoginUser(c echo.Context) error {
-	var user modal.Users
-	if err := c.Bind(&user); err != nil {
+	var rq request.UserLogin
+	var user modal.User
+	if err := c.Bind(&rq); err != nil {
 		return c.JSON(http.StatusBadRequest, err)
 	}
 	db := config.Conn()
 
-	result := db.Where("username = ? and password = ?", user.Username, user.Password).Find(&user)
+	result := db.Where("username = ? and password = ?", rq.Username, rq.Password).Find(&user)
 	if result.RowsAffected == 0 {
 		return c.JSON(http.StatusBadRequest, "Kullanıcı Adı Veya Şifre Yanlış!")
-	} else {
-		return c.JSON(http.StatusOK, user)
 	}
+
+	return c.JSON(http.StatusOK, user)
 
 }
 
 func RegisterUser(c echo.Context) error {
-	var user modal.Users
-	if err := c.Bind(&user); err != nil {
-		return c.JSON(http.StatusBadRequest, "Bilinmeyen Bir Hata Oluştu!")
+	var rq request.UserInsert
+	var user modal.User
+	if err := c.Bind(&rq); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
 	}
 	db := config.Conn()
-	result := db.Where("username = ? or email = ?", user.Username, user.Email).Find(&user)
+	result := db.Where("username = ? or email = ?", rq.Username, rq.Email).Find(&user)
 	if result.RowsAffected != 0 {
 		return c.JSON(http.StatusBadRequest, "Veritabanında Böyle Bir Kullanıcı Mevcut")
-	} else {
-		db.Create(&modal.Users{
-			Name:     user.Name,
-			Surname:  user.Username,
-			Age:      user.Age,
-			Email:    user.Email,
-			Username: user.Username,
-			Password: user.Password,
-		})
-		return c.JSON(http.StatusOK, "Tebrikler Kaydınız Oluşturuldu")
 	}
+	db.Create(&modal.User{
+		Name:     rq.Name,
+		Surname:  rq.Username,
+		Age:      rq.Age,
+		Email:    rq.Email,
+		Username: rq.Username,
+		Password: rq.Password,
+	})
+	return c.JSON(http.StatusOK, "Tebrikler Kaydınız Oluşturuldu")
 }
 
 func DelUser(c echo.Context) error {
-	var user modal.Users
-	if err := c.Bind(&user); err != nil {
+	var rq request.UserDel
+	var user modal.User
+	if err := c.Bind(&rq); err != nil {
 		return c.JSON(http.StatusBadRequest, err)
 	} else {
 		//boyle bir kullanıcı var mı?
 		db := config.Conn()
-		result := db.First(&user, user.ID)
+		result := db.First(&user, rq.ID)
 		if result.RowsAffected == 0 {
 			return c.JSON(http.StatusBadRequest, "Böyle Bir Kullanıcı Kayıtlı Değil")
-		} else {
-			db.Delete(&user, user.ID)
-			return c.JSON(http.StatusOK, "Kullanıcı Başarıyla Silindi")
 		}
+		db.Delete(&user, rq.ID)
+		return c.JSON(http.StatusOK, "Kullanıcı Başarıyla Silindi")
 
 	}
 }

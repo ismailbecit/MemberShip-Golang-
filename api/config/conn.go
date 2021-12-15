@@ -15,7 +15,7 @@ func Conn() *gorm.DB {
 	if err != nil {
 		panic("Veri Tabanına Bağlanılamadı")
 	}
-	db.AutoMigrate(&modal.Users{})
+	db.AutoMigrate(&modal.User{})
 	return db
 
 }
